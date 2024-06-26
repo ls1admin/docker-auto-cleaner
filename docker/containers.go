@@ -32,6 +32,7 @@ func (m *DockerMonitor) CleanContainersRunningLongerThan(duration time.Duration)
 	slog.Debug("Cleanup threshold is set to", "time_threshold", threshold)
 
 	for _, cont := range containers {
+		// TODO handle case when the application itself is running inside a container
 		startTime := time.Unix(cont.Created, 0)
 		slog.Debug("Container started ", "id", cont.ID, "time", startTime)
 		if startTime.Before(threshold) {
