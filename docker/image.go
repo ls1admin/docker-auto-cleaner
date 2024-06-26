@@ -23,7 +23,7 @@ func (m *DockerMonitor) handleImagePull(imageID string) {
 	imagesLRU.Enqueue(img_info)
 
 	totalSize := imagesLRU.TotalSize()
-	for totalSize > storageThresholdGB && !imagesLRU.IsEmpty() {
+	for totalSize > m.storageThresholdGB && !imagesLRU.IsEmpty() {
 		oldestImage := imagesLRU.Dequeue()
 		err := m.deleteImage(oldestImage.ID)
 		if err != nil {

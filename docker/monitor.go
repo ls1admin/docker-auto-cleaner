@@ -11,18 +11,14 @@ import (
 	"github.com/docker/docker/client"
 )
 
-const (
-	// TODO make this configurable
-	storageThresholdGB = 10
-)
-
 var (
 	imagesLRU = NewImageQueue()
 )
 
 type DockerMonitor struct {
-	ctx context.Context
-	cli *client.Client
+	ctx                context.Context
+	cli                *client.Client
+	storageThresholdGB float64
 }
 
 func NewDockerMonitor(ctx context.Context) *DockerMonitor {
@@ -34,12 +30,12 @@ func NewDockerMonitor(ctx context.Context) *DockerMonitor {
 	}
 	slog.Info("Created docker client")
 
-	return &DockerMonitor{cli: cli, ctx: ctx}
+	return &DockerMonitor{cli: cli, ctx: ctx, storageThresholdGB: 10} // TODO make threshold configurable
 }
 
 func (m *DockerMonitor) Start() {
 	slog.Debug("Start monitoring Docker Images according to LRU policy")
-	slog.Info("Storage threshold set to (GB)", "storage_threshold", storageThresholdGB)
+	slog.Info("Storage threshold set to (GB)", "storage_threshold", m.storageThresholdGB)
 	m.initializingExistingImages()
 	m.monitorDockerEvents()
 
