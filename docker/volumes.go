@@ -2,32 +2,32 @@ package docker
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/docker/docker/api/types/volume"
-	log "github.com/sirupsen/logrus"
 )
 
 func RemoveDanglingVolumes(ctx context.Context) error {
-	log.Debug("Start removing dangling volumes")
+	slog.Debug("Start removing dangling volumes")
 
 	// List all the volumes
 	volumeList, err := Cli.VolumeList(ctx, volume.ListOptions{})
-	log.Debugf("Found %d volumes", len(volumeList.Volumes))
+	slog.Debug("Found volumes", "num", len(volumeList.Volumes))
 
 	if err != nil {
-		log.WithError(err).Error("Failed to list volumes")
+		slog.With("error", err).Error("Failed to list volumes")
 		return err
 	}
 
 	//TODO: this is not working at the moment because the UsageData.RefCount can be nil. Not sure why though
 	for _, volume := range volumeList.Volumes {
-		log.Debugf("Start processing volume: %+v", volume)
+		slog.Debug("Start processing volume", "name", volume)
 		if volume.UsageData.RefCount == 0 {
-			log.Debugf("Found dangling volume: %s", volume.Name)
+			slog.Debug("Found dangling volume", "name", volume.Name)
 			if err := Cli.VolumeRemove(ctx, volume.Name, true); err != nil {
-				log.Printf("Failed to remove volume %s: %v", volume.Name, err)
+				slog.With("error", err).Error("Failed to remove volume", "name", volume.Name)
 			} else {
-				log.Printf("Successfully removed volume: %s", volume.Name)
+				slog.Info("Successfully removed volume", "name", volume.Name)
 			}
 		}
 	}

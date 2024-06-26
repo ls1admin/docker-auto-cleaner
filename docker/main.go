@@ -2,13 +2,14 @@ package docker
 
 import (
 	"context"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -29,16 +30,16 @@ var (
 )
 
 func StartImageMonitoring() {
-	log.Debug("Start monitoring Docker Images according to LRU policy")
-	log.Infof("Storage threshold set to %d GB", storageThresholdGB)
+	slog.Debug("Start monitoring Docker Images according to LRU policy")
+	slog.Info("Storage threshold set to %d GB", storageThresholdGB)
 	initializingExistingImages()
 	monitorDockerEvents()
 }
 
 func initializingExistingImages() {
-	images, err := Cli.ImageList(context.Background(), types.ImageListOptions{})
+	images, err := Cli.ImageList(context.Background(), image.ListOptions{})
 	if err != nil {
-		log.WithError(err).Warning("Error listing images")
+		slog.With("error", err).Error("Error listing images")
 		return
 	}
 
@@ -57,7 +58,7 @@ func initializingExistingImages() {
 			Size:     float64(img.Size) / (1024 * 1024 * 1024), // Convert bytes to GB
 		})
 	}
-	log.Debugf("Found existing images %v", imagesLRU)
+	slog.Debug("Found existing images %v", imagesLRU)
 }
 
 func monitorDockerEvents() {
@@ -77,7 +78,7 @@ func monitorDockerEvents() {
 				}
 			}
 		case err := <-errorsCh:
-			log.WithError(err).Warning("Error receiving Docker events")
+			slog.With("error", err).Error("Error receiving Docker events")
 		}
 	}
 }

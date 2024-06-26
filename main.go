@@ -5,12 +5,13 @@ import (
 	"docker-auto-cleaner/docker"
 	"time"
 
+	"log/slog"
+
 	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	docker.Cli = initDockerClient()
 	ctx := context.Background()
 
@@ -30,12 +31,12 @@ func main() {
 
 func initDockerClient() *client.Client {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	log.Debugf("Docker client version: %+v", cli)
+	slog.Debug("Docker client", "version", cli.ClientVersion())
 
 	if err != nil {
-		log.WithError(err).Panic("Failed to create docker client")
+		slog.With("error", err).Error("Failed to create docker client")
 	}
-	log.Info("Created docker client")
+	slog.Info("Created docker client")
 
 	return cli
 }

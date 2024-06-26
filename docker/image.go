@@ -2,11 +2,11 @@ package docker
 
 import (
 	"context"
+	"log/slog"
 	"sort"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	log "github.com/sirupsen/logrus"
+	"github.com/docker/docker/api/types/image"
 )
 
 func handleImagePull(imageID string) {
@@ -29,19 +29,19 @@ func handleImagePull(imageID string) {
 func getImageSize(imageID string) float64 {
 	img, _, err := Cli.ImageInspectWithRaw(context.Background(), imageID)
 	if err != nil {
-		log.WithError(err).Warning("Error inspecting image")
+		slog.With("error", err).Error("Error inspecting image")
 		return 0
 	}
 	return float64(img.Size) / (1024 * 1024 * 1024) // Convert bytes to GB
 }
 
 func deleteImage(imageID string) error {
-	_, err := Cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{})
+	_, err := Cli.ImageRemove(context.Background(), imageID, image.RemoveOptions{})
 	if err != nil {
-		log.WithError(err).Warning("Error removing image")
+		slog.With("error", err).Error("Error removing image")
 		return err
 	}
-	log.WithField("imageID", imageID).WithField("size", getImageSize(imageID)).Debug("Image removed")
+	slog.With("imageID", imageID).With("size", getImageSize(imageID)).Debug("Image removed")
 	return nil
 }
 
