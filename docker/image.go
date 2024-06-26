@@ -33,7 +33,7 @@ func (m *DockerMonitor) handleImagePull(imageID string) {
 }
 
 func (m *DockerMonitor) getImageSize(ImageID string) float64 {
-	img, _, err := cli.ImageInspectWithRaw(context.Background(), ImageID)
+	img, _, err := m.cli.ImageInspectWithRaw(context.Background(), ImageID)
 	if err != nil {
 		slog.With("error", err).Error("Error inspecting image")
 		return 0
@@ -42,7 +42,7 @@ func (m *DockerMonitor) getImageSize(ImageID string) float64 {
 }
 
 func (m *DockerMonitor) deleteImage(ImageID string) error {
-	_, err := cli.ImageRemove(context.Background(), ImageID, image.RemoveOptions{})
+	_, err := m.cli.ImageRemove(context.Background(), ImageID, image.RemoveOptions{})
 	if err != nil {
 		slog.With("error", err).Error("Error removing image")
 		return err

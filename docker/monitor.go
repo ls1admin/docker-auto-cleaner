@@ -18,7 +18,6 @@ const (
 
 var (
 	imagesLRU = NewImageQueue()
-	cli       *client.Client
 )
 
 type DockerMonitor struct {
@@ -35,7 +34,6 @@ func NewDockerMonitor(ctx context.Context) *DockerMonitor {
 	}
 	slog.Info("Created docker client")
 
-	cli = cli
 	return &DockerMonitor{cli: cli, ctx: ctx}
 }
 

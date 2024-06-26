@@ -9,7 +9,7 @@ import (
 )
 
 func (m *DockerMonitor) handleContainerStart(containerID string) {
-	container, err := cli.ContainerInspect(context.Background(), containerID)
+	container, err := m.cli.ContainerInspect(context.Background(), containerID)
 	if err != nil {
 		slog.With("error", err).Error("Error inspecting container")
 		return
