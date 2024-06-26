@@ -11,7 +11,7 @@ import (
 type ImageInfo struct {
 	ID       string
 	LastUsed time.Time
-	Size     float64 // Size in GB
+	Size     int64 // Size in GB
 }
 
 func (m *DockerMonitor) handleImagePull(imageID string) {
@@ -32,13 +32,13 @@ func (m *DockerMonitor) handleImagePull(imageID string) {
 	}
 }
 
-func (m *DockerMonitor) getImageSize(ImageID string) float64 {
+func (m *DockerMonitor) getImageSize(ImageID string) int64 {
 	img, _, err := m.cli.ImageInspectWithRaw(context.Background(), ImageID)
 	if err != nil {
 		slog.With("error", err).Error("Error inspecting image")
 		return 0
 	}
-	return float64(img.Size) / (1024 * 1024 * 1024) // Convert bytes to GB
+	return img.Size
 }
 
 func (m *DockerMonitor) deleteImage(ImageID string) error {

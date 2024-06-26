@@ -18,10 +18,10 @@ var (
 type DockerMonitor struct {
 	ctx                context.Context
 	cli                *client.Client
-	storageThresholdGB float64
+	storageThresholdGB int64
 }
 
-func NewDockerMonitor(ctx context.Context) *DockerMonitor {
+func NewDockerMonitor(ctx context.Context, threshold int64) *DockerMonitor {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	slog.Debug("Docker client", "version", cli.ClientVersion())
 
@@ -30,7 +30,7 @@ func NewDockerMonitor(ctx context.Context) *DockerMonitor {
 	}
 	slog.Info("Created docker client")
 
-	return &DockerMonitor{cli: cli, ctx: ctx, storageThresholdGB: 10} // TODO make threshold configurable
+	return &DockerMonitor{cli: cli, ctx: ctx, storageThresholdGB: threshold}
 }
 
 func (m *DockerMonitor) Start() {
@@ -64,8 +64,8 @@ func (m *DockerMonitor) initializingExistingImages() {
 	for _, img := range images {
 		imagesLRU.Enqueue(ImageInfo{
 			ID:       img.ID,
-			LastUsed: time.Unix(img.Created, 0),                // Approximate LastUsed by image creation time during initialization
-			Size:     float64(img.Size) / (1024 * 1024 * 1024), // Convert bytes to GB
+			LastUsed: time.Unix(img.Created, 0), // Approximate LastUsed by image creation time during initialization
+			Size:     img.Size,                  // Convert bytes to GB
 		})
 	}
 	slog.Info("Found existing images", "len", len(images))

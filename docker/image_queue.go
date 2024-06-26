@@ -13,7 +13,7 @@ type ImageQueue struct {
 	// Cond is used to pause mulitple goroutines and wait
 	cond *sync.Cond
 	// Total Size of the images in the queue
-	totalSize float64
+	totalSize int64
 }
 
 // Initialize ConcurrentQueue
@@ -64,6 +64,6 @@ func (q *ImageQueue) IsEmpty() bool {
 	return len(q.items) == 0
 }
 
-func (q *ImageQueue) TotalSize() float64 {
+func (q *ImageQueue) TotalSize() int64 {
 	return q.totalSize
 }
