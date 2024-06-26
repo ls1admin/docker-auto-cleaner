@@ -1,4 +1,4 @@
-package main
+package docker
 
 import (
 	"context"
@@ -8,18 +8,38 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func handleContainerStart(containerID string) {
+	container, err := Cli.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		log.WithError(err).Warning("Error inspecting container")
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Update the usage timestamp for the image associated with this container
+	for idx, imgInfo := range imagesLRU {
+		if imgInfo.ID == container.Image {
+			imgInfo.LastUsed = time.Now() // Update usage timestamp
+			imagesLRU[idx] = imgInfo
+			break
+		}
+	}
+}
+
 // Function that removes contaienr running for longer tha `minutes` minutes
 // TODO: Handle stopped containers
-func cleanContainersRunningLongerThan(ctx context.Context, minutes uint) error {
+func CleanContainersRunningLongerThan(ctx context.Context, duration time.Duration) error {
 	log.Debug("Start cleaning containers")
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := Cli.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
 		log.WithError(err).Error("Failed to list containers")
 		return err
 	}
 	log.Debugf("Found %d running containers in total", len(containers))
 
-	threshold := time.Now().Add(-time.Duration(minutes) * time.Minute)
+	threshold := time.Now().Add(-duration)
 	log.Debugf("Cleanup threshold is set to: %v", threshold)
 
 	for _, container := range containers {
@@ -30,7 +50,7 @@ func cleanContainersRunningLongerThan(ctx context.Context, minutes uint) error {
 			continue
 		}
 		if startTime.Before(threshold) {
-			if err := cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true}); err != nil {
+			if err := Cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true}); err != nil {
 				log.Infof("Failed to remove container %s: %v", container.ID, err)
 			} else {
 				log.Infof("Removed container %s, started at %s with ID %s", container.Names[0], startTime, container.ID)
@@ -39,5 +59,4 @@ func cleanContainersRunningLongerThan(ctx context.Context, minutes uint) error {
 	}
 
 	return nil
-
 }

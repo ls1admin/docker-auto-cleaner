@@ -1,4 +1,4 @@
-package main
+package docker
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func removeDanglingVolumes(ctx context.Context) error {
+func RemoveDanglingVolumes(ctx context.Context) error {
 	log.Debug("Start removing dangling volumes")
 
 	// List all the volumes
-	volumeList, err := cli.VolumeList(ctx, volume.ListOptions{})
+	volumeList, err := Cli.VolumeList(ctx, volume.ListOptions{})
 	log.Debugf("Found %d volumes", len(volumeList.Volumes))
 
 	if err != nil {
@@ -24,7 +24,7 @@ func removeDanglingVolumes(ctx context.Context) error {
 		log.Debugf("Start processing volume: %+v", volume)
 		if volume.UsageData.RefCount == 0 {
 			log.Debugf("Found dangling volume: %s", volume.Name)
-			if err := cli.VolumeRemove(ctx, volume.Name, true); err != nil {
+			if err := Cli.VolumeRemove(ctx, volume.Name, true); err != nil {
 				log.Printf("Failed to remove volume %s: %v", volume.Name, err)
 			} else {
 				log.Printf("Successfully removed volume: %s", volume.Name)

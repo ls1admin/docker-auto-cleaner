@@ -2,38 +2,30 @@ package main
 
 import (
 	"context"
+	"docker-auto-cleaner/docker"
 	"time"
 
 	"github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
 )
 
-var cli *client.Client
-
 func main() {
 	log.SetLevel(log.DebugLevel)
-	cli = initDockerClient()
+	docker.Cli = initDockerClient()
 	ctx := context.Background()
 
-	cleanContainersRunningLongerThan(ctx, 1)
-	removeDanglingVolumes(ctx)
-	return // TODO: Remove this again - Only for quick testing
+	docker.CleanContainersRunningLongerThan(ctx, time.Minute*30)
+	docker.RemoveDanglingVolumes(ctx)
 
-	go startImageMonitoring() // Start this in a background thread
+	go docker.StartImageMonitoring() // Start this in a background thread
 
+	ticker := time.NewTicker(time.Hour)
 	// Make an endless loop
-	for {
-		now := time.Now()
-
-		nextHour := time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+1, 0, 0, 0, now.Location())
-
-		// Calculate the duration until the next full hour
-		duration := nextHour.Sub(now)
-
-		time.Sleep(duration)
+	for range ticker.C {
 
 		// TODO RUN THE SCHEDULED TASK HERE
 	}
+	ticker.Stop()
 }
 
 func initDockerClient() *client.Client {
