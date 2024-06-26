@@ -2,69 +2,51 @@ package docker
 
 import (
 	"context"
-	"sort"
+	"log/slog"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	log "github.com/sirupsen/logrus"
+	"github.com/docker/docker/api/types/image"
 )
 
-func handleImagePull(imageID string) {
-	size := getImageSize(imageID)
-	now := time.Now()
+type ImageInfo struct {
+	ID       string
+	LastUsed time.Time
+	Size     int64 // Size in GB
+}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	// Mark image as used now
-	imagesLRU = append(imagesLRU, ImageInfo{
+func (m *DockerMonitor) handleImagePull(imageID string) {
+	img_info := ImageInfo{
 		ID:       imageID,
-		LastUsed: now,
-		Size:     size,
-	})
-
-	checkAndFreeSpace()
-}
-
-func getImageSize(imageID string) float64 {
-	img, _, err := Cli.ImageInspectWithRaw(context.Background(), imageID)
-	if err != nil {
-		log.WithError(err).Warning("Error inspecting image")
-		return 0
+		LastUsed: time.Now(),
 	}
-	return float64(img.Size) / (1024 * 1024 * 1024) // Convert bytes to GB
-}
+	img_info.Size = m.getImageSize(img_info.ID)
+	imagesLRU.Enqueue(img_info)
 
-func deleteImage(imageID string) error {
-	_, err := Cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{})
-	if err != nil {
-		log.WithError(err).Warning("Error removing image")
-		return err
-	}
-	log.WithField("imageID", imageID).WithField("size", getImageSize(imageID)).Debug("Image removed")
-	return nil
-}
-
-func checkAndFreeSpace() {
-	totalSize := float64(0)
-	for _, img := range imagesLRU {
-		totalSize += img.Size
-	}
-
-	// Make sure no new image is inserted during cleanup
-	mu.Lock()
-	defer mu.Unlock()
-
-	for totalSize > storageThresholdGB && len(imagesLRU) > 0 {
-		// Sorting by LastUsed to get the least recently used image
-		sort.SliceStable(imagesLRU, func(i, j int) bool {
-			return imagesLRU[i].LastUsed.Before(imagesLRU[j].LastUsed)
-		})
-		oldestImage := imagesLRU[0]
-		err := deleteImage(oldestImage.ID)
-		if err == nil {
-			totalSize -= oldestImage.Size
-			imagesLRU = imagesLRU[1:] // Remove the oldest image from the list
+	totalSize := imagesLRU.TotalSize()
+	for totalSize > m.storageThresholdGB && !imagesLRU.IsEmpty() {
+		oldestImage := imagesLRU.Dequeue()
+		err := m.deleteImage(oldestImage.ID)
+		if err != nil {
+			slog.With("error", err).Error("Failed to remove image")
 		}
 	}
+}
+
+func (m *DockerMonitor) getImageSize(ImageID string) int64 {
+	img, _, err := m.cli.ImageInspectWithRaw(context.Background(), ImageID)
+	if err != nil {
+		slog.With("error", err).Error("Error inspecting image")
+		return 0
+	}
+	return img.Size
+}
+
+func (m *DockerMonitor) deleteImage(ImageID string) error {
+	_, err := m.cli.ImageRemove(context.Background(), ImageID, image.RemoveOptions{})
+	if err != nil {
+		slog.With("error", err).Error("Error removing image")
+		return err
+	}
+	slog.With("imageID", ImageID).With("size", m.getImageSize(ImageID)).Debug("Image removed")
+	return nil
 }

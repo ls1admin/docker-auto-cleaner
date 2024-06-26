@@ -3,39 +3,26 @@ package main
 import (
 	"context"
 	"docker-auto-cleaner/docker"
-	"time"
+	"os"
 
-	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+
+	"github.com/docker/go-units"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
-	docker.Cli = initDockerClient()
-	ctx := context.Background()
-
-	docker.CleanContainersRunningLongerThan(ctx, time.Minute*30)
-	docker.RemoveDanglingVolumes(ctx)
-
-	go docker.StartImageMonitoring() // Start this in a background thread
-
-	ticker := time.NewTicker(time.Hour)
-	// Make an endless loop
-	for range ticker.C {
-
-		// TODO RUN THE SCHEDULED TASK HERE
+	if os.Getenv("DEBUG") == "true" {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
-	ticker.Stop()
-}
 
-func initDockerClient() *client.Client {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	log.Debugf("Docker client version: %+v", cli)
-
+	threshold, err := units.FromHumanSize(os.Getenv("THRESHOLD"))
 	if err != nil {
-		log.WithError(err).Panic("Failed to create docker client")
+		slog.With("error", err).Error("Failed to parse threshold")
+		threshold = 10 * units.GiB
+		slog.Warn("Setting threshold to default value", "threshold", threshold)
 	}
-	log.Info("Created docker client")
 
-	return cli
+	ctx := context.Background()
+	monitor := docker.NewDockerMonitor(ctx, threshold)
+	monitor.Start()
 }
