@@ -37,6 +37,14 @@ func (suite *ContainerTestSuite) TearDownTest() {
 		err = suite.cli.VolumeRemove(ctx, v.Name, true)
 		suite.NoError(err)
 	}
+
+	images, err := suite.cli.ImageList(ctx, image.ListOptions{})
+	suite.NoError(err)
+
+	for _, img := range images {
+		_, err = suite.cli.ImageRemove(ctx, img.ID, image.RemoveOptions{Force: true})
+		suite.NoError(err)
+	}
 }
 
 func (suite *ContainerTestSuite) TestContainerStartHandle() {

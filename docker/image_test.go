@@ -45,6 +45,9 @@ func (suite *ImageTestSuite) TestImageDelete() {
 		suite.T().Errorf("Failed to create DockerMonitor")
 	}
 
+	default_images, err := suite.cli.ImageList(ctx, image.ListOptions{All: true})
+	suite.NoError(err)
+
 	response, err := suite.cli.ImagePull(ctx, "alpine:3.20", image.PullOptions{})
 	suite.NoError(err)
 	defer response.Close()
@@ -52,14 +55,14 @@ func (suite *ImageTestSuite) TestImageDelete() {
 
 	images, err := suite.cli.ImageList(ctx, image.ListOptions{All: true})
 	suite.NoError(err)
-	suite.Equal(1, len(images))
+	suite.Equal(len(default_images)+1, len(images))
 
 	// Handle the image pull which should be removed because of threshold 0
 	dm.deleteImage(images[0].ID)
 
-	images, err = suite.cli.ImageList(ctx, image.ListOptions{All: true})
+	post_images, err := suite.cli.ImageList(ctx, image.ListOptions{All: true})
 	suite.NoError(err)
-	suite.Equal(0, len(images))
+	suite.Equal(len(images)-1, len(post_images))
 }
 
 func (suite *ImageTestSuite) TestImageSize() {
