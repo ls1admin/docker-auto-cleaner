@@ -8,40 +8,67 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestVolumeRemove(t *testing.T) {
+type VolumeTestSuite struct {
+	suite.Suite
+	cli *client.Client
+}
+
+func (suite *VolumeTestSuite) SetupSuite() {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	suite.NoError(err)
+	suite.cli = cli
+}
+
+func (suite *VolumeTestSuite) TearDownSuite() {
+	suite.cli.Close()
+}
+
+func (suite *VolumeTestSuite) TearDownTest() {
+	ctx := context.Background()
+	volumes, err := suite.cli.VolumeList(ctx, volume.ListOptions{})
+	suite.NoError(err)
+
+	for _, v := range volumes.Volumes {
+		err = suite.cli.VolumeRemove(ctx, v.Name, true)
+		suite.NoError(err)
+	}
+}
+
+func (suite *VolumeTestSuite) TestVolumeRemove() {
 	ctx := context.Background()
 	// Define a threshold for the storage
 	dm := NewDockerMonitor(ctx, 0, time.Hour)
 	if dm == nil {
-		t.Errorf("Failed to create DockerMonitor")
+		suite.T().Errorf("Failed to create DockerMonitor")
 	}
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	assert.NoError(t, err)
 
 	args := filters.NewArgs()
 	args.Add("type", "custom")
 
 	// Get the list of networks in advance
-	default_volumes, err := cli.VolumeList(ctx, volume.ListOptions{})
-	assert.NoError(t, err)
+	default_volumes, err := suite.cli.VolumeList(ctx, volume.ListOptions{})
+	suite.NoError(err)
 
-	_, err = cli.VolumeCreate(ctx, volume.CreateOptions{})
-	assert.NoError(t, err)
+	_, err = suite.cli.VolumeCreate(ctx, volume.CreateOptions{})
+	suite.NoError(err)
 
 	// Get the list of networks after creating a new dangling network
-	volumes, err := cli.VolumeList(ctx, volume.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, len(default_volumes.Volumes)+1, len(volumes.Volumes))
+	volumes, err := suite.cli.VolumeList(ctx, volume.ListOptions{})
+	suite.NoError(err)
+	suite.Equal(len(default_volumes.Volumes)+1, len(volumes.Volumes))
 
 	err = dm.RemoveDanglingVolumes(ctx)
-	assert.NoError(t, err)
+	suite.NoError(err)
 
 	// Verify that the dangling network has been removed
-	post_remove_volumes, err := cli.VolumeList(ctx, volume.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, len(default_volumes.Volumes), len(post_remove_volumes.Volumes))
+	post_remove_volumes, err := suite.cli.VolumeList(ctx, volume.ListOptions{})
+	suite.NoError(err)
+	suite.Equal(len(default_volumes.Volumes), len(post_remove_volumes.Volumes))
+}
+
+func TestVolumeTestSuite(t *testing.T) {
+	suite.Run(t, new(VolumeTestSuite))
 }
