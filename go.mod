@@ -2,14 +2,16 @@ module docker-auto-cleaner
 
 go 1.21
 
-require github.com/docker/docker v27.0.1+incompatible
+require (
+	github.com/docker/docker v27.0.1+incompatible
+	github.com/docker/go-units v0.5.0
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
