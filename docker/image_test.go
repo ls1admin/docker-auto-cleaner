@@ -62,7 +62,7 @@ func (suite *ImageTestSuite) TestImageDelete() {
 	suite.Equal(0, len(images))
 }
 
-func (suite *ContainerTestSuite) TestImageSize() {
+func (suite *ImageTestSuite) TestImageSize() {
 	ctx := context.Background()
 	// Define a threshold for the storage
 	dm := NewDockerMonitor(ctx, 0, time.Hour)
@@ -84,7 +84,7 @@ func (suite *ContainerTestSuite) TestImageSize() {
 	suite.Equal(images[0].Size, actual_size)
 }
 
-func (suite *ContainerTestSuite) TestImagePullHandle() {
+func (suite *ImageTestSuite) TestImagePullHandle() {
 	ctx := context.Background()
 
 	response, err := suite.cli.ImagePull(ctx, "alpine:3.20", image.PullOptions{})
