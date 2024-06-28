@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: go mod download
       - name: Test with Go
-        run: go test ./... -json > TestResults.json
+        run: go test ./... -v -json > TestResults.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
