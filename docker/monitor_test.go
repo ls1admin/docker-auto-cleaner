@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
@@ -11,7 +12,7 @@ import (
 
 func TestInitialization(t *testing.T) {
 	ctx := context.Background()
-	dm := NewDockerMonitor(ctx, 1)
+	dm := NewDockerMonitor(ctx, 1, time.Hour)
 	if dm == nil {
 		t.Errorf("Failed to create DockerMonitor")
 	}

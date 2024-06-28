@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
@@ -13,7 +14,7 @@ import (
 func TestImageDelete(t *testing.T) {
 	ctx := context.Background()
 	// Define a threshold for the storage
-	dm := NewDockerMonitor(ctx, 0)
+	dm := NewDockerMonitor(ctx, 0, time.Hour)
 	if dm == nil {
 		t.Errorf("Failed to create DockerMonitor")
 	}
@@ -40,7 +41,7 @@ func TestImageDelete(t *testing.T) {
 func TestImageSize(t *testing.T) {
 	ctx := context.Background()
 	// Define a threshold for the storage
-	dm := NewDockerMonitor(ctx, 0)
+	dm := NewDockerMonitor(ctx, 0, time.Hour)
 	if dm == nil {
 		t.Errorf("Failed to create DockerMonitor")
 	}
@@ -85,7 +86,7 @@ func TestImagePullHandle(t *testing.T) {
 
 	// Handle the image pull which should be removed because of threshold 0
 	// Define a threshold for the storage
-	dm := NewDockerMonitor(context.Background(), images[1].Size)
+	dm := NewDockerMonitor(context.Background(), images[1].Size, time.Hour)
 	if dm == nil {
 		t.Errorf("Failed to create DockerMonitor")
 	}

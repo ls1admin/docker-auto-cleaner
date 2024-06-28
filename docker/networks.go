@@ -4,11 +4,15 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 )
 
 func (m *DockerMonitor) RemoveDanglingNetworks(ctx context.Context) error {
-	networks, err := m.cli.NetworkList(ctx, network.ListOptions{})
+	args := filters.NewArgs()
+	args.Add("type", "custom")
+
+	networks, err := m.cli.NetworkList(ctx, network.ListOptions{Filters: args})
 	if err != nil {
 		return err
 	}

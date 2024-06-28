@@ -19,9 +19,10 @@ type DockerMonitor struct {
 	ctx                context.Context
 	cli                *client.Client
 	storageThresholdGB int64
+	interval           time.Duration
 }
 
-func NewDockerMonitor(ctx context.Context, threshold int64) *DockerMonitor {
+func NewDockerMonitor(ctx context.Context, threshold int64, interval time.Duration) *DockerMonitor {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	slog.Debug("Docker client", "version", cli.ClientVersion())
 
@@ -30,7 +31,7 @@ func NewDockerMonitor(ctx context.Context, threshold int64) *DockerMonitor {
 	}
 	slog.Info("Created docker client")
 
-	return &DockerMonitor{cli: cli, ctx: ctx, storageThresholdGB: threshold}
+	return &DockerMonitor{cli: cli, ctx: ctx, storageThresholdGB: threshold, interval: interval}
 }
 
 func (m *DockerMonitor) Start() {
@@ -39,7 +40,7 @@ func (m *DockerMonitor) Start() {
 	m.initializingExistingImages()
 	m.monitorDockerEvents()
 
-	ticker := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(m.interval)
 	// Make an endless loop
 	for range ticker.C {
 		// Run the scheduled tasks here
