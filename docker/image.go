@@ -20,11 +20,11 @@ func (m *DockerMonitor) handleImagePull(imageID string) {
 		LastUsed: time.Now(),
 	}
 	img_info.Size = m.getImageSize(img_info.ID)
-	imagesLRU.Enqueue(img_info)
+	m.queue.Enqueue(img_info)
 
-	totalSize := imagesLRU.TotalSize()
-	for totalSize > m.storageThresholdGB && !imagesLRU.IsEmpty() {
-		oldestImage := imagesLRU.Dequeue()
+	totalSize := m.queue.TotalSize()
+	for totalSize > m.storageThresholdGB && !m.queue.IsEmpty() {
+		oldestImage := m.queue.Dequeue()
 		err := m.deleteImage(oldestImage.ID)
 		if err != nil {
 			slog.With("error", err).Error("Failed to remove image")

@@ -26,7 +26,6 @@ func (suite *ContainerTestSuite) SetupSuite() {
 
 func (suite *ContainerTestSuite) TearDownSuite() {
 	suite.cli.Close()
-	imagesLRU.Clear()
 }
 
 func (suite *ContainerTestSuite) TearDownTest() {
@@ -50,13 +49,15 @@ func (suite *ContainerTestSuite) TearDownTest() {
 
 func (suite *ContainerTestSuite) TestContainerStartHandle() {
 	first_timestamp := time.Now()
-	imagesLRU.Enqueue(ImageInfo{ID: "1234", LastUsed: first_timestamp, Size: 0})
+	dm := NewDockerMonitor(context.Background(), 0, time.Hour)
+
+	dm.queue.Enqueue(ImageInfo{ID: "1234", LastUsed: first_timestamp, Size: 0})
 
 	time.Sleep(2 * time.Second)
-	imagesLRU.UpdateLastUsed("1234")
+	dm.queue.UpdateLastUsed("1234")
 
-	suite.Equal(1, imagesLRU.Len())
-	suite.Greater(imagesLRU.items[0].LastUsed, first_timestamp)
+	suite.Equal(1, dm.queue.Len())
+	suite.Greater(dm.queue.items[0].LastUsed, first_timestamp)
 }
 
 func (suite *ContainerTestSuite) TestContainerDelete() {

@@ -15,7 +15,7 @@ func (m *DockerMonitor) handleContainerStart(containerID string) {
 		return
 	}
 
-	imagesLRU.UpdateLastUsed(container.Image)
+	m.queue.UpdateLastUsed(container.Image)
 }
 
 // Function that removes contaienr running for longer than duration

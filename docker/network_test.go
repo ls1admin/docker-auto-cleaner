@@ -24,7 +24,6 @@ func (suite *NetworkTestSuite) SetupSuite() {
 
 func (suite *NetworkTestSuite) TearDownSuite() {
 	suite.cli.Close()
-	imagesLRU.Clear()
 }
 
 func (suite *NetworkTestSuite) TearDownTest() {

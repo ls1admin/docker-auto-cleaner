@@ -24,7 +24,6 @@ func (suite *MonitorTestSuite) SetupSuite() {
 
 func (suite *MonitorTestSuite) TearDownSuite() {
 	suite.cli.Close()
-	imagesLRU.Clear()
 }
 
 func (suite *MonitorTestSuite) TearDownTest() {
@@ -34,9 +33,6 @@ func (suite *MonitorTestSuite) TearDownTest() {
 	for _, img := range images {
 		suite.cli.ImageRemove(ctx, img.ID, image.RemoveOptions{Force: true})
 	}
-
-	imagesLRU.Clear()
-	suite.True(imagesLRU.IsEmpty())
 }
 
 func (suite *MonitorTestSuite) TestInitialization() {
@@ -58,8 +54,8 @@ func (suite *MonitorTestSuite) TestInitialization() {
 
 	dm.initializingExistingImages()
 
-	suite.Equal(2, imagesLRU.Len())
-	suite.False(imagesLRU.IsEmpty())
+	suite.Equal(2, dm.queue.Len())
+	suite.False(dm.queue.IsEmpty())
 }
 
 func TestMonitorSuite(t *testing.T) {

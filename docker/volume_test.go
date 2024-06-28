@@ -24,7 +24,6 @@ func (suite *VolumeTestSuite) SetupSuite() {
 
 func (suite *VolumeTestSuite) TearDownSuite() {
 	suite.cli.Close()
-	imagesLRU.Clear()
 }
 
 func (suite *VolumeTestSuite) TearDownTest() {
