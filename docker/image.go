@@ -28,7 +28,10 @@ func (m *DockerMonitor) handleImagePull(imageID string) {
 		err := m.deleteImage(oldestImage.ID)
 		if err != nil {
 			slog.With("error", err).Error("Failed to remove image")
+		} else {
+			slog.With("imageID", oldestImage.ID).With("size", oldestImage.Size).Info("Image removed")
 		}
+		totalSize -= oldestImage.Size
 	}
 }
 
@@ -42,11 +45,10 @@ func (m *DockerMonitor) getImageSize(ImageID string) int64 {
 }
 
 func (m *DockerMonitor) deleteImage(ImageID string) error {
-	_, err := m.cli.ImageRemove(context.Background(), ImageID, image.RemoveOptions{})
+	_, err := m.cli.ImageRemove(context.Background(), ImageID, image.RemoveOptions{Force: true})
 	if err != nil {
 		slog.With("error", err).Error("Error removing image")
 		return err
 	}
-	slog.With("imageID", ImageID).With("size", m.getImageSize(ImageID)).Debug("Image removed")
 	return nil
 }
