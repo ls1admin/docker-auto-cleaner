@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"io"
 	"testing"
 	"time"
 
@@ -44,10 +45,15 @@ func (suite *MonitorTestSuite) TestInitialization() {
 		suite.T().Errorf("Failed to create DockerMonitor")
 	}
 
-	_, err := suite.cli.ImagePull(ctx, "alpine:3.20", image.PullOptions{})
+	resp1, err := suite.cli.ImagePull(ctx, "alpine:3.20", image.PullOptions{})
 	suite.NoError(err)
-	_, err = suite.cli.ImagePull(ctx, "alpine:3.19", image.PullOptions{})
+	defer resp1.Close()
+	io.Copy(io.Discard, resp1)
+
+	resp2, err := suite.cli.ImagePull(ctx, "alpine:3.19", image.PullOptions{})
 	suite.NoError(err)
+	defer resp2.Close()
+	io.Copy(io.Discard, resp2)
 
 	dm.initializingExistingImages()
 
