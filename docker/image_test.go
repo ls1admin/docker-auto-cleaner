@@ -24,6 +24,7 @@ func (suite *ImageTestSuite) SetupSuite() {
 
 func (suite *ImageTestSuite) TearDownSuite() {
 	suite.cli.Close()
+	imagesLRU.Clear()
 }
 
 func (suite *ImageTestSuite) TearDownTest() {
