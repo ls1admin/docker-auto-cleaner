@@ -16,12 +16,15 @@ import (
 type ContainerTestSuite struct {
 	suite.Suite
 	cli *client.Client
+	dm  *DockerMonitor
 }
 
 func (suite *ContainerTestSuite) SetupSuite() {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	suite.NoError(err)
 	suite.cli = cli
+	suite.dm = NewDockerMonitor(context.Background(), 0, time.Hour)
+	suite.NotNil(suite.dm)
 }
 
 func (suite *ContainerTestSuite) TearDownSuite() {
@@ -45,19 +48,20 @@ func (suite *ContainerTestSuite) TearDownTest() {
 		_, err = suite.cli.ImageRemove(ctx, img.ID, image.RemoveOptions{Force: true})
 		suite.NoError(err)
 	}
+
+	suite.dm.queue.Clear()
 }
 
 func (suite *ContainerTestSuite) TestContainerStartHandle() {
 	first_timestamp := time.Now()
-	dm := NewDockerMonitor(context.Background(), 0, time.Hour)
 
-	dm.queue.Enqueue(ImageInfo{ID: "1234", LastUsed: first_timestamp, Size: 0})
+	suite.dm.queue.Enqueue(ImageInfo{ID: "1234", LastUsed: first_timestamp, Size: 0})
 
 	time.Sleep(2 * time.Second)
-	dm.queue.UpdateLastUsed("1234")
+	suite.dm.queue.UpdateLastUsed("1234")
 
-	suite.Equal(1, dm.queue.Len())
-	suite.Greater(dm.queue.items[0].LastUsed, first_timestamp)
+	suite.Equal(1, suite.dm.queue.Len())
+	suite.Greater(suite.dm.queue.items[0].LastUsed, first_timestamp)
 }
 
 func (suite *ContainerTestSuite) TestContainerDelete() {
@@ -73,6 +77,7 @@ func (suite *ContainerTestSuite) TestContainerDelete() {
 	defer response.Close()
 	io.Copy(io.Discard, response)
 
+	// Create a container that will run forever
 	resp, err := suite.cli.ContainerCreate(ctx, &container.Config{Image: "alpine:3.20", Cmd: []string{"tail", "-f", "/dev/null"}}, nil, nil, nil, "test_container")
 	suite.NoError(err)
 
