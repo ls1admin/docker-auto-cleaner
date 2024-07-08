@@ -47,6 +47,17 @@ func (q *ImageQueue) Dequeue() ImageInfo {
 	return item
 }
 
+func (q *ImageQueue) InsertAtFront(items ...ImageInfo) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.items = append(items, q.items...)
+	for _, item := range items {
+		q.totalSize += item.Size
+	}
+	// Cond signals other go routines to execute
+	q.cond.Signal()
+}
+
 func (q *ImageQueue) UpdateLastUsed(imageID string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
@@ -60,8 +71,19 @@ func (q *ImageQueue) UpdateLastUsed(imageID string) {
 	}
 }
 
+func (q *ImageQueue) Clear() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.items = []ImageInfo{}
+	q.totalSize = 0
+}
+
 func (q *ImageQueue) IsEmpty() bool {
 	return len(q.items) == 0
+}
+
+func (q *ImageQueue) Len() int {
+	return len(q.items)
 }
 
 func (q *ImageQueue) TotalSize() int64 {

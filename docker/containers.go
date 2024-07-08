@@ -15,10 +15,10 @@ func (m *DockerMonitor) handleContainerStart(containerID string) {
 		return
 	}
 
-	imagesLRU.UpdateLastUsed(container.Image)
+	m.queue.UpdateLastUsed(container.Image)
 }
 
-// Function that removes contaienr running for longer tha `minutes` minutes
+// Function that removes contaienr running for longer than duration
 func (m *DockerMonitor) CleanContainersRunningLongerThan(duration time.Duration) error {
 	slog.Debug("Start cleaning containers")
 	containers, err := m.cli.ContainerList(m.ctx, container.ListOptions{All: true})
@@ -36,7 +36,7 @@ func (m *DockerMonitor) CleanContainersRunningLongerThan(duration time.Duration)
 		startTime := time.Unix(cont.Created, 0)
 		slog.Debug("Container started ", "id", cont.ID, "time", startTime)
 		if startTime.Before(threshold) {
-			if err := m.cli.ContainerRemove(m.ctx, cont.ID, container.RemoveOptions{}); err != nil {
+			if err := m.cli.ContainerRemove(m.ctx, cont.ID, container.RemoveOptions{Force: true}); err != nil {
 				slog.With("error", err).Error("Failed to remove container", "ID", cont.ID)
 			} else {
 				slog.Info("Removed container", "name", cont.Names[0], "startTime", startTime, "ID", cont.ID)

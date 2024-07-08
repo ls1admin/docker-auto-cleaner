@@ -2,6 +2,10 @@
 
 A tool to automatically cleanup residual docker artifacts
 
+# Testing
+**!!! Attention !!!**
+Be careful when running the tests, as they will remove all docker artifacts that are not in use.
+
 # Requirements
 
 - Kill containers running longer than a specified duration

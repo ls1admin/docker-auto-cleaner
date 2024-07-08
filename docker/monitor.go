@@ -11,17 +11,15 @@ import (
 	"github.com/docker/docker/client"
 )
 
-var (
-	imagesLRU = NewImageQueue()
-)
-
 type DockerMonitor struct {
 	ctx                context.Context
 	cli                *client.Client
+	queue              *ImageQueue
 	storageThresholdGB int64
+	interval           time.Duration
 }
 
-func NewDockerMonitor(ctx context.Context, threshold int64) *DockerMonitor {
+func NewDockerMonitor(ctx context.Context, threshold int64, interval time.Duration) *DockerMonitor {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	slog.Debug("Docker client", "version", cli.ClientVersion())
 
@@ -30,7 +28,7 @@ func NewDockerMonitor(ctx context.Context, threshold int64) *DockerMonitor {
 	}
 	slog.Info("Created docker client")
 
-	return &DockerMonitor{cli: cli, ctx: ctx, storageThresholdGB: threshold}
+	return &DockerMonitor{cli: cli, ctx: ctx, queue: NewImageQueue(), storageThresholdGB: threshold, interval: interval}
 }
 
 func (m *DockerMonitor) Start() {
@@ -39,7 +37,7 @@ func (m *DockerMonitor) Start() {
 	m.initializingExistingImages()
 	m.monitorDockerEvents()
 
-	ticker := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(m.interval)
 	// Make an endless loop
 	for range ticker.C {
 		// Run the scheduled tasks here
@@ -62,7 +60,7 @@ func (m *DockerMonitor) initializingExistingImages() {
 	})
 
 	for _, img := range images {
-		imagesLRU.Enqueue(ImageInfo{
+		m.queue.Enqueue(ImageInfo{
 			ID:       img.ID,
 			LastUsed: time.Unix(img.Created, 0), // Approximate LastUsed by image creation time during initialization
 			Size:     img.Size,                  // Convert bytes to GB
